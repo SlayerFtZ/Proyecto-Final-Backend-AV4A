@@ -97,68 +97,70 @@
 
 ### 2.1 Feature `categories`
 
-- [ ] **Entidad** `Categoria` con `@Table(name="Categorias")`, `@Column` exactos
-- [ ] **Repositorio** `CategoriaJpaRepository` extendiendo `JpaRepository<Categoria, Integer>`
-- [ ] **Servicio** `CategoriaService`:
+- [x] **Entidad** `Category` con `@Table(name="Categorias")`, `@Column` exactos
+- [x] **Repositorio** `CategoryJpaRepository` extendiendo `JpaRepository<Category, Integer>`
+- [x] **Servicio** `CategoryService`:
   - Validar nombre único antes de crear/editar
   - Al borrar: verificar que no tenga productos (`REGISTRO_EN_USO` si tiene)
-- [ ] **Controller** `CategoriaController` con:
+- [x] **Controller** `CategoryController` con:
   - `GET /api/categorias` — lista completa
   - `GET /api/categorias/{id}` — detalle o 404
   - `POST /api/categorias` → 201 + `Location`
   - `PUT /api/categorias/{id}` → 200 / 404
   - `DELETE /api/categorias/{id}` → 204 / 409
-- [ ] **DTOs**: `CategoriaRequest` (nombre, descripcion), `CategoriaResponse` (id, nombre, descripcion)
+- [x] **DTOs**: `CategoryRequest` (name, description), `CategoryResponse` (id, name, description)
 
 ### 2.2 Feature `suppliers`
 
-- [ ] **Entidad** `Proveedor` con `@Table(name="Proveedores")`
-- [ ] **Repositorio** `ProveedorJpaRepository`
-- [ ] **Servicio** `ProveedorService`:
+- [x] **Entidad** `Supplier` con `@Table(name="Proveedores")`
+- [x] **Repositorio** `SupplierJpaRepository`
+- [x] **Servicio** `SupplierService`:
   - Al borrar: verificar que no tenga productos asociados
-- [ ] **Controller** `ProveedorController` — mismo patrón CRUD que categorías (`/api/proveedores`)
-- [ ] **DTOs**: `ProveedorRequest` (nombre, telefono, correo), `ProveedorResponse`
-- [ ] **Validaciones**: `correo` con `@Email` si viene, `telefono` máx. 20 chars
+- [x] **Controller** `SupplierController` — mismo patrón CRUD que categorías (`/api/proveedores`)
+- [x] **DTOs**: `SupplierRequest` (name, phone, email), `SupplierResponse`
+- [x] **Validaciones**: `email` con `@Email` si viene, `phone` máx. 20 chars
 
 ### 2.3 Feature `products` — Domain
 
-- [ ] **Entidad** `Producto` con:
+- [x] **Entidad** `Product` con:
   - `@Table(name="Productos")`, todos los `@Column(name="...")` exactos al script SQL
-  - Campos: `idProducto`, `codigoBarras`, `nombre`, `descripcion`, `precio` (`BigDecimal`), `stock`, `stockMinimo`, `tipo`, `fechaCaducidad` (`LocalDate`), `mesesGarantia`, `talla`
-  - `@ManyToOne` hacia `Categoria` y `Proveedor` (fetch LAZY)
-- [ ] **Enum** `TipoProducto` — `PERECEDERO`, `ELECTRONICO`, `ROPA` con valor `String` exacto para la BD
-- [ ] **Puerto** `ProductoRepository` (interfaz en domain) con métodos: `findAll(filtros)`, `findById`, `findByCodigoBarras`, `save`, `delete`, `descontarStock`
+  - Campos: `id`, `barcode`, `name`, `description`, `price` (`BigDecimal`), `stock`, `minimumStock`, `type`, `expirationDate` (`LocalDate`), `warrantyMonths`, `size`
+  - `@ManyToOne` hacia `Category` y `Supplier` (fetch LAZY)
+- [x] **Enum** `ProductType` — `PERISHABLE`, `ELECTRONIC`, `CLOTHING` con `AttributeConverter` que mapea a `Perecedero`/`Electronico`/`Ropa` en BD
+- [x] **Puerto** `ProductRepository` (interfaz en domain) con métodos: `findAll(filter)`, `findById`, `findByBarcode`, `existsByBarcodeAndIdNot`, `save`, `deleteById`, `decrementStock`
 
 ### 2.4 Feature `products` — Infrastructure
 
-- [ ] **`ProductoJpaRepository`** extendiendo `JpaRepository`:
-  - `@Query` nativo `descontarStock(@Param id, @Param cantidad)` — UPDATE atómico `WHERE stock >= cantidad`
-  - Consultas con filtros opcionales (`q`, `categoriaId`, `proveedorId`, `tipo`)
-- [ ] **`ProductoRepositoryAdapter`** implementando `ProductoRepository` del dominio
+- [x] **`ProductJpaRepository`** extendiendo `JpaRepository` + `JpaSpecificationExecutor`:
+  - `@Modifying @Query` nativo `decrementStock` — UPDATE atómico `WHERE Stock >= :quantity`
+  - Derivados: `findByBarcode`, `existsByBarcodeAndIdNot`
+- [x] **`ProductSpecification`** — Specification con fetch JOIN de `category`/`supplier` (evita N+1) y 4 predicados opcionales (`query`, `categoryId`, `supplierId`, `type`)
+- [x] **`ProductRepositoryAdapter`** implementando `ProductRepository` del dominio
 
 ### 2.5 Feature `products` — Presentation
 
-- [ ] **`ProductoRequest`** con validaciones Jakarta:
-  - `nombre`: `@NotBlank`, `@Size(max=150)`
-  - `codigoBarras`: `@NotBlank`, `@Pattern(regexp="^\\d{8,14}$")`
-  - `precio`: `@NotNull`, `@DecimalMin("0.01")`, tipo `BigDecimal`
-  - `stock`, `stockMinimo`: `@Min(0)`
-  - `tipo`: `@NotNull`
-  - `idCategoria`, `idProveedor`: `@NotNull`
-- [ ] **Validaciones cruzadas por tipo** en `ProductoService`:
-  - `Perecedero` → `fechaCaducidad` obligatoria, limpiar `mesesGarantia` y `talla`
-  - `Electronico` → `mesesGarantia` obligatorio (`>= 0`), limpiar los demás
-  - `Ropa` → `talla` obligatoria, limpiar los demás
-- [ ] **`ProductoResponse`** — incluye `id`, `categoriaNombre`, `proveedorNombre` (campos de solo lectura)
-- [ ] **`ProductoMapper`** — convierte entre `Producto` ↔ `ProductoRequest` / `ProductoResponse`
-- [ ] **`ProductoController`** con endpoints:
-  - `GET /api/productos` — lista con filtros opcionales `q`, `categoriaId`, `proveedorId`, `tipo`
+- [x] **`ProductRequest`** con validaciones Jakarta:
+  - `barcode`: `@NotBlank`, `@Pattern(regexp="^\\d{8,14}$")`
+  - `name`: `@NotBlank`, `@Size(max=150)`
+  - `price`: `@NotNull`, `@DecimalMin("0.01")`, tipo `BigDecimal`
+  - `stock`, `minimumStock`: `@Min(0)`
+  - `type`: `@NotNull`
+  - `categoryId`, `supplierId`: `@NotNull`
+- [x] **Validaciones cruzadas por tipo** en `ProductService`:
+  - `PERISHABLE` → `expirationDate` obligatoria, limpiar `warrantyMonths` y `size`
+  - `ELECTRONIC` → `warrantyMonths` obligatorio, limpiar los demás
+  - `CLOTHING` → `size` obligatoria, limpiar los demás
+  - `TypeValidationException` (400 `VALIDACION_TIPO`) si falla
+- [x] **`ProductResponse`** — incluye `id`, `categoryName`, `supplierName` (desnormalizados)
+- [x] **`ProductMapper`** — `@Component` con `toResponse(Product)` y `applyRequest(Product, ProductRequest, Category, Supplier)`
+- [x] **`ProductController`** con endpoints:
+  - `GET /api/productos` — lista con filtros opcionales `q`, `categoryId`, `supplierId`, `type`
   - `GET /api/productos/{id}` — 200 / 404
-  - `GET /api/productos/codigo/{codigoBarras}` — búsqueda exacta para el escáner
+  - `GET /api/productos/codigo/{barcode}` — búsqueda exacta para el escáner
   - `POST /api/productos` → 201 + `Location`
   - `PUT /api/productos/{id}` → 200 / 404 / 409
   - `DELETE /api/productos/{id}` → 204 / 404 / 409 (si tiene ventas)
-  - `PATCH /api/productos/{id}/stock` — body `{ "delta": N }`, acepta negativos con validación
+  - `PATCH /api/productos/{id}/stock` — body `{ "delta": N }`, acepta negativos con validación atómica
 
 ---
 

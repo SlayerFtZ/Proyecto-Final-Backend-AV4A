@@ -63,7 +63,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiError> handleMaxUploadSize(
             MaxUploadSizeExceededException ex, HttpServletRequest request) {
 
-        return build(HttpStatus.CONTENT_TOO_LARGE, "ARCHIVO_INVALIDO",
+        return build(HttpStatus.PAYLOAD_TOO_LARGE, "ARCHIVO_INVALIDO",
                 "El archivo supera el tamaño máximo permitido (5 MB)", null, request);
     }
 
