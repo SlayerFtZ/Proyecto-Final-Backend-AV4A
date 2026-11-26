@@ -168,19 +168,20 @@
 
 ### 3.1 Feature `sales`
 
-- [ ] **Entidades** `Venta` y `DetalleVenta` con relaciones y `@Table` exactos
-- [ ] **Repositorios** JPA para ambas entidades
-- [ ] **`VentaService`** — toda la lógica en **una sola transacción** (`@Transactional`):
-  1. Validar `items` no vacío, `cantidad > 0`; si producto repetido, sumar cantidades
-  2. Para cada ítem: llamar `descontarStock()` → si retorna 0, lanzar `StockInsuficienteException` y rollback
-  3. Usar `Productos.Precio` de BD como precio base; aceptar `precioUnitario` del request solo si viene y es `> 0`
-  4. Calcular `Total` = suma de `cantidad × precioUnitario`
-  5. Guardar `Venta` y sus `DetalleVenta`
-- [ ] **`VentaController`**:
+- [x] **Entidades** `Sale` (`@Table Ventas`) y `SaleItem` (`@Table DetalleVenta`) con relaciones y `@Column` exactos
+- [x] **Repositorio** `SaleJpaRepository` con 3 JPQL JOIN FETCH (findAllWithItems, findByFechaRange, findByIdWithItems)
+- [x] **`SaleService`** — toda la lógica en **una sola transacción** (`@Transactional`):
+  1. Validar `items` no vacío, `cantidad > 0` (anotaciones Jakarta)
+  2. Merge de IDs duplicados: suma cantidades, conserva primer precio válido
+  3. Para cada ítem: `findById` (precio/stock) → `decrementStock` atómico → si retorna 0 → `InsufficientStockException` y rollback
+  4. Re-fetch entidad gestionada post-cache-clear → construye `SaleItem`
+  5. Total = suma de `cantidad × precioUnitario`
+  6. Guarda `Sale` con cascade ALL hacia `SaleItem`
+- [x] **`SaleController`**:
   - `POST /api/ventas` → 201 con venta completa y detalle
-  - `GET /api/ventas` — lista, filtro opcional `fecha=YYYY-MM-DD`
+  - `GET /api/ventas` — lista, filtro opcional `fecha=YYYY-MM-DD` (`@DateTimeFormat ISO`)
   - `GET /api/ventas/{id}` — venta con detalle y nombres de producto
-- [ ] **DTOs**: `VentaRequest` (items[]), `ItemVentaRequest` (idProducto, cantidad, precioUnitario?), `VentaResponse` con `detalle[]`
+- [x] **DTOs**: `SaleRequest` / `SaleItemRequest` (productId, quantity, unitPrice?) / `SaleResponse` / `SaleItemResponse` (con subtotal calculado)
 
 ---
 
