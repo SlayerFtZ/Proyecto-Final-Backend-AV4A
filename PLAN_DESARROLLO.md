@@ -189,17 +189,19 @@
 
 ### 4.1 Feature `reports`
 
-- [ ] **Proyecciones de interfaz** para cada consulta:
-  - `ProductoDetalleRow` — producto + categoría + proveedor
-  - `VentaDetalleRow` — venta + detalle + nombre de producto
-  - `StockBajoPorProveedorRow` — proveedor + producto con stock bajo
-  - `TotalPorCategoriaRow` — `idCategoria`, `categoria`, `unidadesVendidas`, `totalVendido`
-- [ ] **`ReportQueryRepository`** — 4 métodos con `@Query(nativeQuery = true)`:
-  - Los alias SQL deben coincidir exactamente con los getters de las proyecciones
-  - Para `ventas-detalle`: el servicio sustituye `desde`/`hasta` nulos por valores por defecto (`1900-01-01` / mañana)
-- [ ] **`ReportController`**:
+- [x] **Proyecciones de interfaz** para cada consulta:
+  - `ProductDetailRow` — producto + categoría + proveedor (15 getters)
+  - `SaleDetailRow` — venta + detalle + nombre de producto (9 getters)
+  - `LowStockBySupplierRow` — proveedor + producto con stock bajo (10 getters)
+  - `TotalByCategoryRow` — `idCategoria`, `categoria`, `unidadesVendidas` (Long), `totalVendido` (BigDecimal)
+- [x] **`ReportQueryRepository`** — `extends Repository<Sale, Integer>`, 4 métodos con `@Query(nativeQuery = true)`:
+  - Alias SQL coinciden exactamente con los getters de cada proyección
+  - `COALESCE(SUM(...), 0)` en total-por-categoria para categorías sin ventas
+  - `CAST(Cantidad AS DECIMAL)` evita truncamiento al multiplicar INT × DECIMAL
+- [x] **`ReportService`** — sustituye `desde`/`hasta` nulos: `1900-01-01` / mañana; convierte a `LocalDateTime` para el `WHERE` sobre `DATETIME2`
+- [x] **`ReportController`**:
   - `GET /api/reportes/productos-detalle`
-  - `GET /api/reportes/ventas-detalle?desde=&hasta=`
+  - `GET /api/reportes/ventas-detalle?desde=&hasta=` (`@DateTimeFormat ISO.DATE`)
   - `GET /api/reportes/stock-bajo-por-proveedor`
   - `GET /api/reportes/total-por-categoria`
 
