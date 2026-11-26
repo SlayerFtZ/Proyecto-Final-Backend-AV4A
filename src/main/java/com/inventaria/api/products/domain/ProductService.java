@@ -6,13 +6,16 @@ import com.inventaria.api.shared.error.InsufficientStockException;
 import com.inventaria.api.shared.error.RecordInUseException;
 import com.inventaria.api.shared.error.ResourceNotFoundException;
 import com.inventaria.api.suppliers.infrastructure.SupplierJpaRepository;
-import com.inventaria.api.products.presentation.ProductMapper;
-import com.inventaria.api.products.presentation.ProductRequest;
-import com.inventaria.api.products.presentation.ProductResponse;
+import com.inventaria.api.products.presentation.*;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.Validator;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional(readOnly = true)
@@ -22,15 +25,18 @@ public class ProductService {
     private final CategoryJpaRepository categoryRepository;
     private final SupplierJpaRepository supplierRepository;
     private final ProductMapper mapper;
+    private final Validator validator;
 
     public ProductService(ProductRepository productRepository,
                           CategoryJpaRepository categoryRepository,
                           SupplierJpaRepository supplierRepository,
-                          ProductMapper mapper) {
+                          ProductMapper mapper,
+                          Validator validator) {
         this.productRepository = productRepository;
         this.categoryRepository = categoryRepository;
         this.supplierRepository = supplierRepository;
         this.mapper = mapper;
+        this.validator = validator;
     }
 
     public List<ProductResponse> findAll(String query, Integer categoryId,
@@ -121,6 +127,60 @@ public class ProductService {
 
         product.setStock(product.getStock() + delta);
         return mapper.toResponse(productRepository.save(product));
+    }
+
+    @Transactional
+    public BatchResponse batchImport(BatchRequest request) {
+        List<BatchErrorItem> errors = new ArrayList<>();
+        int inserted = 0;
+        List<ProductRequest> products = request.products();
+
+        for (int i = 0; i < products.size(); i++) {
+            int row = i + 1;
+            ProductRequest req = products.get(i);
+
+            String preError = validateForBatch(req);
+            if (preError != null) {
+                errors.add(new BatchErrorItem(row, req.barcode(), preError));
+                continue;
+            }
+
+            try {
+                var category = categoryRepository.findById(req.categoryId()).orElseThrow();
+                var supplier = supplierRepository.findById(req.supplierId()).orElseThrow();
+
+                Product product = new Product();
+                mapper.applyRequest(product, req, category, supplier);
+                validateCrossType(product);
+                productRepository.save(product);
+                inserted++;
+            } catch (TypeValidationException e) {
+                errors.add(new BatchErrorItem(row, req.barcode(), e.getMessage()));
+            } catch (Exception e) {
+                errors.add(new BatchErrorItem(row, req.barcode(), "Error al guardar: " + e.getMessage()));
+            }
+        }
+
+        return new BatchResponse(products.size(), inserted, errors);
+    }
+
+    private String validateForBatch(ProductRequest req) {
+        Set<ConstraintViolation<ProductRequest>> violations = validator.validate(req);
+        if (!violations.isEmpty()) {
+            return violations.stream()
+                    .map(v -> v.getPropertyPath() + ": " + v.getMessage())
+                    .collect(Collectors.joining("; "));
+        }
+        if (req.barcode() != null && productRepository.findByBarcode(req.barcode()).isPresent()) {
+            return "Código de barras '" + req.barcode() + "' ya está registrado";
+        }
+        if (req.categoryId() != null && !categoryRepository.existsById(req.categoryId())) {
+            return "Categoría con id " + req.categoryId() + " no existe";
+        }
+        if (req.supplierId() != null && !supplierRepository.existsById(req.supplierId())) {
+            return "Proveedor con id " + req.supplierId() + " no existe";
+        }
+        return null;
     }
 
     private void validateCrossType(Product product) {

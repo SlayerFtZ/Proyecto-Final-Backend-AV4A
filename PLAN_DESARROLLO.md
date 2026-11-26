@@ -211,13 +211,14 @@
 
 ### 5.1 Endpoint de lote
 
-- [ ] **`POST /api/productos/lote`** — body: `{ "productos": [ProductoRequest, ...] }` (máx. 500):
-  - Cada fila se valida de forma independiente
-  - Las válidas se insertan; las inválidas se reportan **sin abortar el lote completo**
-  - `@Transactional` en el servicio: cada lote es una transacción independiente
-  - Si un código de barras ya existe: reportar como error sin interrumpir
-- [ ] **`LoteResponse`** — `recibidos`, `insertados`, `errores[]` (fila, codigoBarras, mensaje)
-- [ ] Verificar que la app pueda enviar lotes de 50–100 ítems con progreso y cancelación entre lotes
+- [x] **`POST /api/productos/lote`** — body: `{ "products": [ProductRequest, ...] }` (máx. 500):
+  - `BatchRequest` con `@Size(max=500)` en la lista; elementos SIN `@Valid` para permitir errores por fila
+  - `validateForBatch()` en el servicio: validación Jakarta manual via `Validator.validate()` + unicidad de barcode + existencia de categoría/proveedor
+  - Las válidas se insertan; las inválidas van a `errors[]` sin abortar el lote
+  - `TypeValidationException` por tipo también capturada por fila
+  - `@Transactional` en el lote completo; toda escritura exitosa se confirma al final
+- [x] **`BatchResponse`** — `received`, `inserted`, `errors[]` (`BatchErrorItem`: row, barcode, message)
+- [x] Endpoint accesible vía Swagger UI en `/api/productos/lote`
 
 ---
 

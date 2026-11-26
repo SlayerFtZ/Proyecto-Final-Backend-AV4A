@@ -79,6 +79,12 @@ public class ProductController {
         return service.adjustStock(id, request.delta());
     }
 
+    @PostMapping("/lote")
+    @Operation(summary = "Importar lote de productos (máx. 500); errores por fila sin abortar el lote completo")
+    public BatchResponse batchImport(@Valid @RequestBody BatchRequest request) {
+        return service.batchImport(request);
+    }
+
     private ProductType parseType(String type) {
         if (type == null || type.isBlank()) return null;
         try {
