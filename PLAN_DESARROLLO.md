@@ -226,34 +226,34 @@
 
 ### 6.1 Feature `summary` — Domain
 
-- [ ] **Puerto** `AiTextClient` (interfaz) — método `generarTexto(String prompt, String datos): String`
-- [ ] **`AlertaService`** — genera alertas de forma determinista (sin IA):
+- [x] **Puerto** `AiTextClient` (interfaz) — método `generateText(String systemPrompt, String data): String`
+- [x] **`AlertService`** — genera alertas de forma determinista (sin IA):
   - `CRITICO` (rojo): stock = 0, producto vencido, o caduca en 0–2 días
   - `AVISO` (amarillo): `0 < stock <= stockMinimo`, o caduca en 3–7 días
-- [ ] **`GeneradorLocal`** — genera texto de resumen con plantillas en caso de falla de IA (nunca debe fallar)
-- [ ] **`ResumenService`** — orquesta: consultas SQL → alertas → llamada IA → fallback local → respuesta
+- [x] **`LocalSummaryGenerator`** — genera texto de resumen con plantillas en caso de falla de IA (nunca debe fallar)
+- [x] **`SummaryService`** — orquesta: consultas SQL → alertas → llamada IA → fallback local → respuesta
 
 ### 6.2 Feature `summary` — Infrastructure
 
-- [ ] **`AiTextClientImpl`** con `RestClient`:
+- [x] **`AiTextClientImpl`** con `RestClient`:
   - Lee `ia.api-key`, `ia.base-url`, `ia.model-texto` de `application.properties`
   - Timeouts: conexión 5 s, lectura `ia.timeout-segundos`
   - Sin reintentos automáticos
   - Limitar a máx. 20 productos por lista antes de enviar
   - **Nunca** loguear la clave ni datos en base64
-- [ ] **`ResumenQueryRepository`** — 4 consultas nativas del día:
+- [x] **`SummaryQueryRepository`** — 4 consultas nativas del día:
   - Stock bajo, por caducar/vencidos, ventas del día, top 5 más vendidos
-- [ ] **`ResumenIaRepository`** — guarda texto generado en `ResumenesIA`
+- [x] **`SummaryIaJpaRepository`** — guarda texto generado en `ResumenesIA`
 
 ### 6.3 Feature `summary` — Presentation
 
-- [ ] **Prompt del sistema** en constante o `application.properties`:
+- [x] **Prompt del sistema** en constante `SYSTEM_PROMPT` en `SummaryService`:
   > "Eres un asistente de inventario. Redacta un reporte breve en español (máx. 150 palabras) con resumen de ventas, alertas y 2–3 recomendaciones. Usa solo los datos recibidos. Responde en texto plano."
-- [ ] **`ResumenController`**:
+- [x] **`SummaryController`**:
   - `GET /api/resumen/datos` — datos estructurados del día sin IA (también sirve al generador local de la app)
-  - `POST /api/resumen/generar` — datos + alertas + texto (`origen: "IA"` o `"LOCAL"`)
-  - `GET /api/resumen/historial` *(opcional)* — últimos resúmenes de `ResumenesIA`
-- [ ] **DTOs**: `ResumenResponse` (generadoEn, origen, texto, alertas[], datos), `AlertaDto` (nivel, tipo, idProducto, titulo, detalle), `DatosResumenDto`
+  - `POST /api/resumen/generar` — datos + alertas + texto (`origin: "IA"` o `"LOCAL"`)
+  - `GET /api/resumen/historial` — últimos 10 resúmenes de `ResumenesIA`
+- [x] **DTOs**: `SummaryResponse` (generatedAt, origin, text, alerts[], data), `AlertDto` (level, type, productId, title, detail), `DaySummaryData` (con nested records LowStockItem, ExpiryItem, TopSellerItem)
 
 ---
 
