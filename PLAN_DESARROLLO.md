@@ -285,27 +285,28 @@
 
 ### 8.1 Pruebas unitarias (JUnit 5 + Mockito)
 
-- [ ] `ProductoServiceTest` — validaciones cruzadas por tipo (Perecedero/Electronico/Ropa), limpieza de campos nulos
-- [ ] `AlertaServiceTest` — casos CRITICO y AVISO por stock y por caducidad, incluir borde (caduca en exactamente 2 y 3 días)
-- [ ] `GeneradorLocalTest` — texto generado no es nulo ni vacío con distintos escenarios de datos
-- [ ] `VentaServiceTest` — venta exitosa descuenta stock; venta con stock insuficiente lanza excepción y hace rollback
-- [ ] `ResumenServiceTest` — IA exitosa → `origen: IA`; timeout / error / clave vacía → `origen: LOCAL`
+- [x] `ProductServiceTest` — 6 casos: validaciones cruzadas por tipo (PERISHABLE/ELECTRONIC/CLOTHING), campo requerido presente y ausente
+- [x] `AlertServiceTest` — 7 casos: CRITICO y AVISO por stock y caducidad, borde exacto en días 2 y 3
+- [x] `LocalSummaryGeneratorTest` — 3 casos: texto no nulo, escenario positivo, alertas críticas incluyen recomendaciones
+- [x] `SaleServiceTest` — venta exitosa descuenta stock; stock insuficiente → `InsufficientStockException` y `save` no llamado
+- [x] `SummaryServiceTest` — IA exitosa → `origin: "IA"`; IA lanza excepción → `origin: "LOCAL"`; IA no configurada → `origin: "LOCAL"`
 
-### 8.2 Pruebas de controllers (`@WebMvcTest` + MockMvc)
+### 8.2 Pruebas de controllers (`@WebMvcTest` + MockMvc + `@MockitoBean`)
 
-- [ ] `ProductoControllerTest`:
-  - `POST` con body inválido → 400 con `detalles[]`
+- [x] `ProductControllerTest`:
+  - `POST` con body vacío → 400 `VALIDACION` con `detalles[]`
   - `POST` con código duplicado → 409 `CODIGO_BARRAS_DUPLICADO`
   - `GET` inexistente → 404 `NO_ENCONTRADO`
-  - `PATCH /stock` con delta que dejaría stock negativo → 409 `STOCK_INSUFICIENTE`
-- [ ] `VentaControllerTest`:
-  - `POST` sin items → 400
-  - `POST` con stock insuficiente → 409
-  - `POST` exitosa → 201 con cuerpo completo
-- [ ] `ScannerControllerTest`:
+  - `PATCH /stock` con stock insuficiente → 409 `STOCK_INSUFICIENTE`
+- [x] `SaleControllerTest`:
+  - `POST` con items vacíos → 400 `VALIDACION`
+  - `POST` con stock insuficiente → 409 `STOCK_INSUFICIENTE`
+  - `POST` exitosa → 201 con `Location` header
+- [x] `ScannerControllerTest`:
   - Imagen vacía → 400 `ARCHIVO_INVALIDO`
   - Imagen > 5 MB → 413 `ARCHIVO_INVALIDO`
   - IA falla → 503 `IA_NO_DISPONIBLE`
+  - Imagen válida → 200 con sugerencia completa
 
 ### 8.3 Verificación manual con Swagger UI
 
@@ -320,7 +321,7 @@
 
 ### 8.4 Cierre
 
-- [ ] **`README.md`** — instrucciones completas:
+- [x] **`README.md`** — instrucciones completas:
   1. Prerrequisitos (Java 21, SQL Server, Maven)
   2. Crear la base de datos ejecutando `database/script_creacion.sql`
   3. Configurar variables de entorno copiando `.env.example` → `.env`
@@ -328,9 +329,11 @@
   5. Swagger UI: `http://localhost:8080/swagger-ui.html`
   6. Configuración para emulador Android (`10.0.2.2:8080`) y celular físico (IP de la PC)
 
-- [ ] **Auditoría de seguridad final**:
-  - `git log --all --full-history -- "*.env"` — confirmar que `.env` nunca se subió
-  - Buscar `IA_API_KEY` en el historial de commits
+- [ ] **Auditoría de seguridad final** *(manual — ejecutar antes de entregar)*:
+  ```bash
+  git log --all --full-history -- "*.env"
+  git log --all -S "IA_API_KEY" --source --all
+  ```
   - Revisar logs de la aplicación: sin claves, sin imágenes base64
   - Confirmar que `.env` y `application-local.properties` están en `.gitignore`
 

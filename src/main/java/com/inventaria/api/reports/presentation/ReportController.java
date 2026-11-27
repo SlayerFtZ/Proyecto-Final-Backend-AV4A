@@ -28,23 +28,29 @@ public class ReportController {
     }
 
     @GetMapping("/productos-detalle")
-    @Operation(summary = "Todos los productos con categoría y proveedor (JOIN)")
-    public List<ProductDetailRow> productDetails() {
-        return service.findProductDetails();
+    @Operation(summary = "Todos los productos con categoría y proveedor (JOIN). Paginación: page (0-based), size (default 50)")
+    public List<ProductDetailRow> productDetails(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "50") int size) {
+        return service.findProductDetails(page, size);
     }
 
     @GetMapping("/ventas-detalle")
-    @Operation(summary = "Ventas con detalle y nombre de producto (JOIN); filtro opcional desde/hasta")
+    @Operation(summary = "Ventas con detalle y nombre de producto (JOIN); filtro opcional desde/hasta. Paginación: page, size (default 50)")
     public List<SaleDetailRow> saleDetails(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate desde,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate hasta) {
-        return service.findSaleDetails(desde, hasta);
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate hasta,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "50") int size) {
+        return service.findSaleDetails(desde, hasta, page, size);
     }
 
     @GetMapping("/stock-bajo-por-proveedor")
-    @Operation(summary = "Productos con stock ≤ stockMínimo agrupados por proveedor (JOIN)")
-    public List<LowStockBySupplierRow> lowStockBySupplier() {
-        return service.findLowStockBySupplier();
+    @Operation(summary = "Productos con stock ≤ stockMínimo agrupados por proveedor (JOIN). Paginación: page, size (default 50)")
+    public List<LowStockBySupplierRow> lowStockBySupplier(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "50") int size) {
+        return service.findLowStockBySupplier(page, size);
     }
 
     @GetMapping("/total-por-categoria")

@@ -12,6 +12,11 @@ import jakarta.validation.Validator;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+
+import java.util.List;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -39,9 +44,12 @@ public class ProductService {
         this.validator = validator;
     }
 
+    private static final Sort PRODUCT_SORT = Sort.by(Sort.Direction.ASC, "name");
+
     public List<ProductResponse> findAll(String query, Integer categoryId,
-                                          Integer supplierId, ProductType type) {
-        return productRepository.findAll(new ProductFilter(query, categoryId, supplierId, type))
+                                          Integer supplierId, ProductType type, int page, int size) {
+        PageRequest pageReq = PageRequest.of(page, size, PRODUCT_SORT);
+        return productRepository.findAll(new ProductFilter(query, categoryId, supplierId, type), pageReq)
                 .stream().map(mapper::toResponse).toList();
     }
 

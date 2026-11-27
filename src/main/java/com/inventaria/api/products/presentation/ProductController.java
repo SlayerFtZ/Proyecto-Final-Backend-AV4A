@@ -7,11 +7,12 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
+
+import java.util.List;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.net.URI;
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/productos")
@@ -25,15 +26,17 @@ public class ProductController {
     }
 
     @GetMapping
-    @Operation(summary = "Listar productos con filtros opcionales: q, categoryId, supplierId, type")
+    @Operation(summary = "Listar productos con filtros opcionales: q, categoryId, supplierId, type. Paginación: page (0-based), size (default 20)")
     public List<ProductResponse> findAll(
             @RequestParam(required = false) String q,
             @RequestParam(required = false) Integer categoryId,
             @RequestParam(required = false) Integer supplierId,
-            @RequestParam(required = false) String type) {
+            @RequestParam(required = false) String type,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
 
         ProductType productType = parseType(type);
-        return service.findAll(q, categoryId, supplierId, productType);
+        return service.findAll(q, categoryId, supplierId, productType, page, size);
     }
 
     @GetMapping("/{id}")

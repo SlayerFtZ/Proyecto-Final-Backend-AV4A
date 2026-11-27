@@ -9,6 +9,9 @@ import com.inventaria.api.sales.presentation.SaleRequest;
 import com.inventaria.api.sales.presentation.SaleResponse;
 import com.inventaria.api.shared.error.InsufficientStockException;
 import com.inventaria.api.shared.error.ResourceNotFoundException;
+import org.springframework.data.domain.PageRequest;
+
+import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,11 +34,13 @@ public class SaleService {
         this.productRepository = productRepository;
     }
 
-    public List<SaleResponse> findAll(LocalDate date) {
-        List<Sale> sales = (date != null)
-                ? saleRepository.findByFechaRangeWithItems(date.atStartOfDay(), date.plusDays(1).atStartOfDay())
-                : saleRepository.findAllWithItems();
-        return sales.stream().map(this::toResponse).toList();
+    public List<SaleResponse> findAll(LocalDate date, int page, int size) {
+        PageRequest pageReq = PageRequest.of(page, size);
+        return ((date != null)
+                ? saleRepository.findByFechaRangePaged(
+                        date.atStartOfDay(), date.plusDays(1).atStartOfDay(), pageReq)
+                : saleRepository.findAllPaged(pageReq))
+                .getContent().stream().map(this::toResponse).toList();
     }
 
     public SaleResponse findById(Integer id) {

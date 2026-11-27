@@ -3,6 +3,7 @@ package com.inventaria.api.products.infrastructure;
 import com.inventaria.api.products.domain.Product;
 import com.inventaria.api.products.domain.ProductFilter;
 import com.inventaria.api.products.domain.ProductRepository;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -18,8 +19,8 @@ public class ProductRepositoryAdapter implements ProductRepository {
     }
 
     @Override
-    public List<Product> findAll(ProductFilter filter) {
-        return jpa.findAll(ProductSpecification.withFilter(filter));
+    public List<Product> findAll(ProductFilter filter, PageRequest pageable) {
+        return jpa.findAll(ProductSpecification.withFilter(filter), pageable).getContent();
     }
 
     @Override

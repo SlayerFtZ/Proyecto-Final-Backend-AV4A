@@ -5,13 +5,14 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.format.annotation.DateTimeFormat;
+
+import java.util.List;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.net.URI;
 import java.time.LocalDate;
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/ventas")
@@ -25,11 +26,13 @@ public class SaleController {
     }
 
     @GetMapping
-    @Operation(summary = "Listar ventas (filtro opcional: fecha=YYYY-MM-DD)")
+    @Operation(summary = "Listar ventas (filtro opcional: fecha=YYYY-MM-DD). Paginación: page (0-based), size (default 20)")
     public List<SaleResponse> findAll(
             @RequestParam(required = false)
-            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fecha) {
-        return service.findAll(fecha);
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fecha,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return service.findAll(fecha, page, size);
     }
 
     @GetMapping("/{id}")

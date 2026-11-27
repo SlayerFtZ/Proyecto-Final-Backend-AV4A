@@ -1,11 +1,13 @@
 package com.inventaria.api.products.domain;
 
+import org.springframework.data.domain.PageRequest;
+
 import java.util.List;
 import java.util.Optional;
 
 public interface ProductRepository {
 
-    List<Product> findAll(ProductFilter filter);
+    List<Product> findAll(ProductFilter filter, PageRequest pageable);
 
     Optional<Product> findById(Integer id);
 

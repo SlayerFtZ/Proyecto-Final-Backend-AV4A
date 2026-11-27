@@ -1,6 +1,7 @@
 package com.inventaria.api.reports.domain;
 
 import com.inventaria.api.reports.infrastructure.ReportQueryRepository;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,19 +21,18 @@ public class ReportService {
         this.repository = repository;
     }
 
-    public List<ProductDetailRow> findProductDetails() {
-        return repository.findProductDetails();
+    public List<ProductDetailRow> findProductDetails(int page, int size) {
+        return repository.findProductDetails(PageRequest.of(page, size)).getContent();
     }
 
-    public List<SaleDetailRow> findSaleDetails(LocalDate desde, LocalDate hasta) {
+    public List<SaleDetailRow> findSaleDetails(LocalDate desde, LocalDate hasta, int page, int size) {
         LocalDateTime start = (desde != null ? desde : DEFAULT_FROM).atStartOfDay();
-        // hasta is exclusive upper bound: include the full last day
         LocalDateTime end = (hasta != null ? hasta.plusDays(1) : LocalDate.now().plusDays(1)).atStartOfDay();
-        return repository.findSaleDetails(start, end);
+        return repository.findSaleDetails(start, end, PageRequest.of(page, size)).getContent();
     }
 
-    public List<LowStockBySupplierRow> findLowStockBySupplier() {
-        return repository.findLowStockBySupplier();
+    public List<LowStockBySupplierRow> findLowStockBySupplier(int page, int size) {
+        return repository.findLowStockBySupplier(PageRequest.of(page, size)).getContent();
     }
 
     public List<TotalByCategoryRow> findTotalByCategory() {

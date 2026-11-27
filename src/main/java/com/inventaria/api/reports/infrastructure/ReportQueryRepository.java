@@ -5,6 +5,8 @@ import com.inventaria.api.reports.domain.ProductDetailRow;
 import com.inventaria.api.reports.domain.SaleDetailRow;
 import com.inventaria.api.reports.domain.TotalByCategoryRow;
 import com.inventaria.api.sales.domain.Sale;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.Repository;
 import org.springframework.data.repository.query.Param;
@@ -34,8 +36,15 @@ public interface ReportQueryRepository extends Repository<Sale, Integer> {
               INNER JOIN Categorias  c  ON p.IdCategoria = c.IdCategoria
               INNER JOIN Proveedores pr ON p.IdProveedor = pr.IdProveedor
              ORDER BY p.Nombre
-            """, nativeQuery = true)
-    List<ProductDetailRow> findProductDetails();
+            """,
+            countQuery = """
+            SELECT COUNT(*)
+              FROM Productos p
+              INNER JOIN Categorias  c  ON p.IdCategoria = c.IdCategoria
+              INNER JOIN Proveedores pr ON p.IdProveedor = pr.IdProveedor
+            """,
+            nativeQuery = true)
+    Page<ProductDetailRow> findProductDetails(Pageable pageable);
 
     @Query(value = """
             SELECT v.IdVenta         AS idVenta,
@@ -52,10 +61,19 @@ public interface ReportQueryRepository extends Repository<Sale, Integer> {
               INNER JOIN Productos    p  ON dv.IdProducto = p.IdProducto
              WHERE v.Fecha >= :desde AND v.Fecha < :hasta
              ORDER BY v.Fecha DESC, v.IdVenta, dv.IdDetalle
-            """, nativeQuery = true)
-    List<SaleDetailRow> findSaleDetails(
+            """,
+            countQuery = """
+            SELECT COUNT(*)
+              FROM Ventas v
+              INNER JOIN DetalleVenta dv ON v.IdVenta     = dv.IdVenta
+              INNER JOIN Productos    p  ON dv.IdProducto = p.IdProducto
+             WHERE v.Fecha >= :desde AND v.Fecha < :hasta
+            """,
+            nativeQuery = true)
+    Page<SaleDetailRow> findSaleDetails(
             @Param("desde") LocalDateTime desde,
-            @Param("hasta") LocalDateTime hasta);
+            @Param("hasta") LocalDateTime hasta,
+            Pageable pageable);
 
     @Query(value = """
             SELECT pr.IdProveedor AS idProveedor,
@@ -72,8 +90,15 @@ public interface ReportQueryRepository extends Repository<Sale, Integer> {
               INNER JOIN Proveedores pr ON p.IdProveedor = pr.IdProveedor
              WHERE p.Stock <= p.StockMinimo
              ORDER BY pr.Nombre, p.Stock ASC
-            """, nativeQuery = true)
-    List<LowStockBySupplierRow> findLowStockBySupplier();
+            """,
+            countQuery = """
+            SELECT COUNT(*)
+              FROM Productos p
+              INNER JOIN Proveedores pr ON p.IdProveedor = pr.IdProveedor
+             WHERE p.Stock <= p.StockMinimo
+            """,
+            nativeQuery = true)
+    Page<LowStockBySupplierRow> findLowStockBySupplier(Pageable pageable);
 
     @Query(value = """
             SELECT c.IdCategoria                                        AS idCategoria,

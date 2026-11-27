@@ -463,3 +463,21 @@ WHERE CAST(v.Fecha AS DATE) = CAST(GETDATE() AS DATE)
 GROUP BY p.Nombre
 ORDER BY SUM(d.Cantidad) DESC;
 GO
+
+
+-- 1. Crear el login a nivel de SERVIDOR
+CREATE LOGIN inventaria_user
+    WITH PASSWORD = 'TuPasswordSeguro123!',
+    CHECK_POLICY = OFF,         -- desactiva política de complejidad de Windows
+    CHECK_EXPIRATION = OFF;     -- desactiva expiración de contraseña
+
+-- 2. Usar tu base de datos
+USE InventarIA;
+
+-- 3. Crear el usuario dentro de la BD ligado al login
+CREATE USER inventaria_user FOR LOGIN inventaria_user;
+
+-- 4. Darle permisos de lectura/escritura
+ALTER ROLE db_datareader ADD MEMBER inventaria_user;
+ALTER ROLE db_datawriter ADD MEMBER inventaria_user;
+GO
