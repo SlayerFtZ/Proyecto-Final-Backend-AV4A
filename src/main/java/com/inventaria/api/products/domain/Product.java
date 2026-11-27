@@ -16,7 +16,12 @@ public class Product {
     @Column(name = "IdProducto")
     private Integer id;
 
-    @Column(name = "CodigoBarras", nullable = false, length = 20, unique = true)
+    /** Dueño del registro (Usuarios.IdUsuario). */
+    @Column(name = "IdUsuario", nullable = false, updatable = false)
+    private Integer userId;
+
+    // Único por usuario: UQ_Productos_Usuario_CodigoBarras (IdUsuario, CodigoBarras)
+    @Column(name = "CodigoBarras", nullable = false, length = 20)
     private String barcode;
 
     @Column(name = "Nombre", nullable = false, length = 150)
@@ -58,6 +63,9 @@ public class Product {
     public Product() {}
 
     public Integer getId() { return id; }
+
+    public Integer getUserId() { return userId; }
+    public void setUserId(Integer userId) { this.userId = userId; }
 
     public String getBarcode() { return barcode; }
     public void setBarcode(String barcode) { this.barcode = barcode; }

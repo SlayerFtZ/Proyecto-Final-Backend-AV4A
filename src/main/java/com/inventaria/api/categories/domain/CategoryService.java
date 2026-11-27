@@ -6,6 +6,7 @@ import com.inventaria.api.categories.presentation.CategoryResponse;
 import com.inventaria.api.shared.error.DuplicateNameException;
 import com.inventaria.api.shared.error.RecordInUseException;
 import com.inventaria.api.shared.error.ResourceNotFoundException;
+import com.inventaria.api.shared.security.CurrentUser;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,29 +17,31 @@ import java.util.List;
 public class CategoryService {
 
     private final CategoryJpaRepository repository;
+    private final CurrentUser currentUser;
 
-    public CategoryService(CategoryJpaRepository repository) {
+    public CategoryService(CategoryJpaRepository repository, CurrentUser currentUser) {
         this.repository = repository;
+        this.currentUser = currentUser;
     }
 
     public List<CategoryResponse> findAll() {
-        return repository.findAll().stream()
+        return repository.findAllByUserId(currentUser.getId()).stream()
                 .map(this::toResponse)
                 .toList();
     }
 
     public CategoryResponse findById(Integer id) {
-        return repository.findById(id)
-                .map(this::toResponse)
-                .orElseThrow(() -> new ResourceNotFoundException("Categoría", id));
+        return toResponse(getOwned(id));
     }
 
     @Transactional
     public CategoryResponse create(CategoryRequest request) {
-        if (repository.existsByNameIgnoreCase(request.name())) {
+        Integer userId = currentUser.getId();
+        if (repository.existsByUserIdAndNameIgnoreCase(userId, request.name())) {
             throw new DuplicateNameException("categoría", request.name());
         }
         Category category = new Category();
+        category.setUserId(userId);
         category.setName(request.name());
         category.setDescription(request.description());
         return toResponse(repository.save(category));
@@ -46,10 +49,9 @@ public class CategoryService {
 
     @Transactional
     public CategoryResponse update(Integer id, CategoryRequest request) {
-        Category category = repository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Categoría", id));
+        Category category = getOwned(id);
 
-        if (repository.existsByNameIgnoreCaseAndIdNot(request.name(), id)) {
+        if (repository.existsByUserIdAndNameIgnoreCaseAndIdNot(category.getUserId(), request.name(), id)) {
             throw new DuplicateNameException("categoría", request.name());
         }
 
@@ -60,13 +62,19 @@ public class CategoryService {
 
     @Transactional
     public void delete(Integer id) {
-        if (!repository.existsById(id)) {
+        if (!repository.existsByIdAndUserId(id, currentUser.getId())) {
             throw new ResourceNotFoundException("Categoría", id);
         }
         if (repository.countProductsByCategoryId(id) > 0) {
             throw new RecordInUseException("categoría", id);
         }
         repository.deleteById(id);
+    }
+
+    /** Devuelve la categoría solo si pertenece al usuario actual; si no, 404. */
+    private Category getOwned(Integer id) {
+        return repository.findByIdAndUserId(id, currentUser.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Categoría", id));
     }
 
     private CategoryResponse toResponse(Category c) {

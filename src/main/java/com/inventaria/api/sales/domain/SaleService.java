@@ -9,9 +9,8 @@ import com.inventaria.api.sales.presentation.SaleRequest;
 import com.inventaria.api.sales.presentation.SaleResponse;
 import com.inventaria.api.shared.error.InsufficientStockException;
 import com.inventaria.api.shared.error.ResourceNotFoundException;
+import com.inventaria.api.shared.security.CurrentUser;
 import org.springframework.data.domain.PageRequest;
-
-import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,29 +27,36 @@ public class SaleService {
 
     private final SaleJpaRepository saleRepository;
     private final ProductRepository productRepository;
+    private final CurrentUser currentUser;
 
-    public SaleService(SaleJpaRepository saleRepository, ProductRepository productRepository) {
+    public SaleService(SaleJpaRepository saleRepository,
+                       ProductRepository productRepository,
+                       CurrentUser currentUser) {
         this.saleRepository = saleRepository;
         this.productRepository = productRepository;
+        this.currentUser = currentUser;
     }
 
     public List<SaleResponse> findAll(LocalDate date, int page, int size) {
+        Integer userId = currentUser.getId();
         PageRequest pageReq = PageRequest.of(page, size);
         return ((date != null)
                 ? saleRepository.findByFechaRangePaged(
-                        date.atStartOfDay(), date.plusDays(1).atStartOfDay(), pageReq)
-                : saleRepository.findAllPaged(pageReq))
+                        userId, date.atStartOfDay(), date.plusDays(1).atStartOfDay(), pageReq)
+                : saleRepository.findAllPaged(userId, pageReq))
                 .getContent().stream().map(this::toResponse).toList();
     }
 
     public SaleResponse findById(Integer id) {
-        return saleRepository.findByIdWithItems(id)
+        return saleRepository.findByIdWithItems(id, currentUser.getId())
                 .map(this::toResponse)
                 .orElseThrow(() -> new ResourceNotFoundException("Venta", id));
     }
 
     @Transactional
     public SaleResponse create(SaleRequest request) {
+        Integer userId = currentUser.getId();
+
         // Merge duplicate product IDs: sum quantities, keep first valid custom price
         Map<Integer, Integer> quantities = new LinkedHashMap<>();
         Map<Integer, BigDecimal> requestedPrices = new LinkedHashMap<>();
@@ -63,6 +69,7 @@ public class SaleService {
         }
 
         Sale sale = new Sale();
+        sale.setUserId(userId);
         sale.setFecha(LocalDateTime.now());
         BigDecimal total = BigDecimal.ZERO;
 
@@ -70,8 +77,8 @@ public class SaleService {
             Integer productId = entry.getKey();
             Integer qty = entry.getValue();
 
-            // Load product for name, current price, and stock snapshot before decrement
-            Product product = productRepository.findById(productId)
+            // Solo se pueden vender productos propios; uno ajeno responde 404.
+            Product product = productRepository.findByIdAndUserId(productId, userId)
                     .orElseThrow(() -> new ResourceNotFoundException("Producto", productId));
 
             BigDecimal unitPrice = requestedPrices.getOrDefault(productId, product.getPrice());
@@ -99,7 +106,7 @@ public class SaleService {
         sale.setTotal(total);
         Sale saved = saleRepository.save(sale);
 
-        return toResponse(saleRepository.findByIdWithItems(saved.getId()).orElseThrow());
+        return toResponse(saleRepository.findByIdWithItems(saved.getId(), userId).orElseThrow());
     }
 
     private SaleResponse toResponse(Sale sale) {

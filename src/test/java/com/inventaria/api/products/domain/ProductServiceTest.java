@@ -3,6 +3,7 @@ package com.inventaria.api.products.domain;
 import com.inventaria.api.categories.domain.Category;
 import com.inventaria.api.categories.infrastructure.CategoryJpaRepository;
 import com.inventaria.api.products.presentation.*;
+import com.inventaria.api.shared.security.CurrentUser;
 import com.inventaria.api.suppliers.domain.Supplier;
 import com.inventaria.api.suppliers.infrastructure.SupplierJpaRepository;
 import jakarta.validation.Validator;
@@ -30,8 +31,11 @@ class ProductServiceTest {
     @Mock SupplierJpaRepository supplierRepository;
     @Mock ProductMapper mapper;
     @Mock Validator validator;
+    @Mock CurrentUser currentUser;
 
     @InjectMocks ProductService service;
+
+    private static final Integer USER_ID = 1;
 
     private Category category;
     private Supplier supplier;
@@ -45,12 +49,15 @@ class ProductServiceTest {
                 new BigDecimal("10.00"), 10, 5, ProductType.PERISHABLE,
                 LocalDate.now().plusDays(30), null, null, 1, "Cat", 1, "Sup");
 
-        when(productRepository.findByBarcode(anyString())).thenReturn(Optional.empty());
-        when(categoryRepository.findById(anyInt())).thenReturn(Optional.of(category));
-        when(supplierRepository.findById(anyInt())).thenReturn(Optional.of(supplier));
-        when(validator.validate(any())).thenReturn(Collections.emptySet());
-        when(productRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
-        when(mapper.toResponse(any())).thenReturn(mockResponse);
+        // lenient: no todos los tests usan todos los stubs comunes (p. ej. los casos que lanzan excepción
+        // no llegan a save/toResponse); evita UnnecessaryStubbingException de Mockito.
+        lenient().when(currentUser.getId()).thenReturn(USER_ID);
+        lenient().when(productRepository.existsByBarcodeAndUserId(anyString(), eq(USER_ID))).thenReturn(false);
+        lenient().when(categoryRepository.findByIdAndUserId(anyInt(), eq(USER_ID))).thenReturn(Optional.of(category));
+        lenient().when(supplierRepository.findByIdAndUserId(anyInt(), eq(USER_ID))).thenReturn(Optional.of(supplier));
+        lenient().when(validator.validate(any())).thenReturn(Collections.emptySet());
+        lenient().when(productRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        lenient().when(mapper.toResponse(any())).thenReturn(mockResponse);
     }
 
     // ── PERISHABLE ───────────────────────────────────────────────────────────
@@ -62,7 +69,7 @@ class ProductServiceTest {
         });
 
         assertDoesNotThrow(() -> service.create(perishableRequest(LocalDate.now().plusDays(10))));
-        verify(productRepository).save(any());
+        verify(productRepository).save(argThat(p -> USER_ID.equals(p.getUserId())));
     }
 
     @Test

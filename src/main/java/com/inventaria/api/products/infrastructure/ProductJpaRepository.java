@@ -12,9 +12,15 @@ import java.util.Optional;
 public interface ProductJpaRepository
         extends JpaRepository<Product, Integer>, JpaSpecificationExecutor<Product> {
 
-    Optional<Product> findByBarcode(String barcode);
+    Optional<Product> findByIdAndUserId(Integer id, Integer userId);
 
-    boolean existsByBarcodeAndIdNot(String barcode, Integer id);
+    Optional<Product> findByBarcodeAndUserId(String barcode, Integer userId);
+
+    boolean existsByIdAndUserId(Integer id, Integer userId);
+
+    boolean existsByBarcodeAndUserId(String barcode, Integer userId);
+
+    boolean existsByBarcodeAndUserIdAndIdNot(String barcode, Integer userId, Integer id);
 
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query(value = """

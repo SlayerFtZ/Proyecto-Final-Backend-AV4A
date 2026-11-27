@@ -19,28 +19,38 @@ public class ProductRepositoryAdapter implements ProductRepository {
     }
 
     @Override
-    public List<Product> findAll(ProductFilter filter, PageRequest pageable) {
-        return jpa.findAll(ProductSpecification.withFilter(filter), pageable).getContent();
+    public List<Product> findAll(Integer userId, ProductFilter filter, PageRequest pageable) {
+        return jpa.findAll(ProductSpecification.withFilter(userId, filter), pageable).getContent();
+    }
+
+    @Override
+    public Optional<Product> findByIdAndUserId(Integer id, Integer userId) {
+        return jpa.findByIdAndUserId(id, userId);
+    }
+
+    @Override
+    public Optional<Product> findByBarcodeAndUserId(String barcode, Integer userId) {
+        return jpa.findByBarcodeAndUserId(barcode, userId);
+    }
+
+    @Override
+    public boolean existsByIdAndUserId(Integer id, Integer userId) {
+        return jpa.existsByIdAndUserId(id, userId);
+    }
+
+    @Override
+    public boolean existsByBarcodeAndUserId(String barcode, Integer userId) {
+        return jpa.existsByBarcodeAndUserId(barcode, userId);
+    }
+
+    @Override
+    public boolean existsByBarcodeAndUserIdAndIdNot(String barcode, Integer userId, Integer id) {
+        return jpa.existsByBarcodeAndUserIdAndIdNot(barcode, userId, id);
     }
 
     @Override
     public Optional<Product> findById(Integer id) {
         return jpa.findById(id);
-    }
-
-    @Override
-    public Optional<Product> findByBarcode(String barcode) {
-        return jpa.findByBarcode(barcode);
-    }
-
-    @Override
-    public boolean existsById(Integer id) {
-        return jpa.existsById(id);
-    }
-
-    @Override
-    public boolean existsByBarcodeAndIdNot(String barcode, Integer id) {
-        return jpa.existsByBarcodeAndIdNot(barcode, id);
     }
 
     @Override

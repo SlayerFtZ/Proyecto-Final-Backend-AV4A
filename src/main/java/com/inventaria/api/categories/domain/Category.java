@@ -11,6 +11,10 @@ public class Category {
     @Column(name = "IdCategoria")
     private Integer id;
 
+    /** Dueño del registro (Usuarios.IdUsuario). */
+    @Column(name = "IdUsuario", nullable = false, updatable = false)
+    private Integer userId;
+
     @Column(name = "Nombre", nullable = false, length = 100)
     private String name;
 
@@ -20,6 +24,9 @@ public class Category {
     public Category() {}
 
     public Integer getId() { return id; }
+
+    public Integer getUserId() { return userId; }
+    public void setUserId(Integer userId) { this.userId = userId; }
 
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }

@@ -12,6 +12,10 @@ public class AiSummaryRecord {
     @Column(name = "IdResumen")
     private Integer id;
 
+    /** Dueño del registro (Usuarios.IdUsuario). */
+    @Column(name = "IdUsuario", nullable = false, updatable = false)
+    private Integer userId;
+
     @Column(name = "Fecha", nullable = false)
     private LocalDateTime fecha;
 
@@ -19,6 +23,9 @@ public class AiSummaryRecord {
     private String text;
 
     public Integer getId() { return id; }
+
+    public Integer getUserId() { return userId; }
+    public void setUserId(Integer userId) { this.userId = userId; }
 
     public LocalDateTime getFecha() { return fecha; }
     public void setFecha(LocalDateTime fecha) { this.fecha = fecha; }

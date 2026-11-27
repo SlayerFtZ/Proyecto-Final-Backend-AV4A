@@ -11,6 +11,10 @@ public class Supplier {
     @Column(name = "IdProveedor")
     private Integer id;
 
+    /** Dueño del registro (Usuarios.IdUsuario). */
+    @Column(name = "IdUsuario", nullable = false, updatable = false)
+    private Integer userId;
+
     @Column(name = "Nombre", nullable = false, length = 150)
     private String name;
 
@@ -23,6 +27,9 @@ public class Supplier {
     public Supplier() {}
 
     public Integer getId() { return id; }
+
+    public Integer getUserId() { return userId; }
+    public void setUserId(Integer userId) { this.userId = userId; }
 
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }

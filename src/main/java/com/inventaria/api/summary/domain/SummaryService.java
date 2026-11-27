@@ -1,6 +1,7 @@
 package com.inventaria.api.summary.domain;
 
 import com.inventaria.api.shared.config.IaProperties;
+import com.inventaria.api.shared.security.CurrentUser;
 import com.inventaria.api.summary.infrastructure.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,30 +30,34 @@ public class SummaryService {
     private final LocalSummaryGenerator localGenerator;
     private final IaProperties iaProperties;
     private final SummaryIaJpaRepository iaRepository;
+    private final CurrentUser currentUser;
 
     public SummaryService(SummaryQueryRepository queryRepository,
                           AlertService alertService,
                           AiTextClient aiTextClient,
                           LocalSummaryGenerator localGenerator,
                           IaProperties iaProperties,
-                          SummaryIaJpaRepository iaRepository) {
+                          SummaryIaJpaRepository iaRepository,
+                          CurrentUser currentUser) {
         this.queryRepository = queryRepository;
         this.alertService    = alertService;
         this.aiTextClient    = aiTextClient;
         this.localGenerator  = localGenerator;
         this.iaProperties    = iaProperties;
         this.iaRepository    = iaRepository;
+        this.currentUser     = currentUser;
     }
 
     public SummaryResponse getDayData() {
-        DaySummaryData data   = fetchDayData();
+        DaySummaryData data   = fetchDayData(currentUser.getId());
         List<AlertDto> alerts = alertService.generateAlerts(data.lowStockProducts(), data.expiringProducts());
         return new SummaryResponse(LocalDateTime.now(), null, null, alerts, data);
     }
 
     @Transactional
     public SummaryResponse generateSummary() {
-        DaySummaryData data   = fetchDayData();
+        Integer userId        = currentUser.getId();
+        DaySummaryData data   = fetchDayData(userId);
         List<AlertDto> alerts = alertService.generateAlerts(data.lowStockProducts(), data.expiringProducts());
 
         String text;
@@ -73,6 +78,7 @@ public class SummaryService {
         }
 
         AiSummaryRecord record = new AiSummaryRecord();
+        record.setUserId(userId);
         record.setFecha(LocalDateTime.now());
         record.setText(text);
         iaRepository.save(record);
@@ -81,18 +87,18 @@ public class SummaryService {
     }
 
     public List<SummaryHistoryItem> getHistory() {
-        return iaRepository.findTop10ByOrderByFechaDesc().stream()
+        return iaRepository.findTop10ByUserIdOrderByFechaDesc(currentUser.getId()).stream()
                 .map(r -> new SummaryHistoryItem(r.getId(), r.getFecha(), r.getText()))
                 .toList();
     }
 
     // ── private helpers ───────────────────────────────────────────────────────
 
-    private DaySummaryData fetchDayData() {
-        List<LowStockRow>   lowStock   = queryRepository.findLowStockProducts();
-        List<ExpiryRow>     expiring   = queryRepository.findExpiringProducts();
-        List<TodaySalesRow> salesRows  = queryRepository.findTodaySales();
-        List<TopSellerRow>  topSellers = queryRepository.findTopSellersToday();
+    private DaySummaryData fetchDayData(Integer userId) {
+        List<LowStockRow>   lowStock   = queryRepository.findLowStockProducts(userId);
+        List<ExpiryRow>     expiring   = queryRepository.findExpiringProducts(userId);
+        List<TodaySalesRow> salesRows  = queryRepository.findTodaySales(userId);
+        List<TopSellerRow>  topSellers = queryRepository.findTopSellersToday(userId);
 
         long       totalSales = salesRows.stream().findFirst().map(TodaySalesRow::getTotalVentas).orElse(0L);
         BigDecimal revenue    = salesRows.stream().findFirst().map(TodaySalesRow::getMontoTotal).orElse(BigDecimal.ZERO);

@@ -13,7 +13,7 @@ public final class ProductSpecification {
 
     private ProductSpecification() {}
 
-    public static Specification<Product> withFilter(ProductFilter filter) {
+    public static Specification<Product> withFilter(Integer userId, ProductFilter filter) {
         return (root, query, cb) -> {
 
             // Eager-fetch associations to avoid N+1 on the list endpoint.
@@ -25,6 +25,9 @@ public final class ProductSpecification {
             }
 
             List<Predicate> predicates = new ArrayList<>();
+
+            // Siempre: solo productos del usuario autenticado.
+            predicates.add(cb.equal(root.get("userId"), userId));
 
             if (filter.query() != null && !filter.query().isBlank()) {
                 String pattern = "%" + filter.query().toLowerCase() + "%";

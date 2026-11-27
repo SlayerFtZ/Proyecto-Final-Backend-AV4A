@@ -6,5 +6,5 @@ import java.util.List;
 
 public interface SummaryIaJpaRepository extends JpaRepository<AiSummaryRecord, Integer> {
 
-    List<AiSummaryRecord> findTop10ByOrderByFechaDesc();
+    List<AiSummaryRecord> findTop10ByUserIdOrderByFechaDesc(Integer userId);
 }

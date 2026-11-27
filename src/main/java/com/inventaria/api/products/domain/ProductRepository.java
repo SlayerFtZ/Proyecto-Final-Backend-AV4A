@@ -7,15 +7,24 @@ import java.util.Optional;
 
 public interface ProductRepository {
 
-    List<Product> findAll(ProductFilter filter, PageRequest pageable);
+    // ── Consultas filtradas por usuario ──────────────────────────────────────
 
+    List<Product> findAll(Integer userId, ProductFilter filter, PageRequest pageable);
+
+    Optional<Product> findByIdAndUserId(Integer id, Integer userId);
+
+    Optional<Product> findByBarcodeAndUserId(String barcode, Integer userId);
+
+    boolean existsByIdAndUserId(Integer id, Integer userId);
+
+    boolean existsByBarcodeAndUserId(String barcode, Integer userId);
+
+    boolean existsByBarcodeAndUserIdAndIdNot(String barcode, Integer userId, Integer id);
+
+    // ── Operaciones sobre un producto cuya propiedad ya se validó ────────────
+
+    /** Relectura tras un UPDATE nativo; llamar solo con IDs ya validados como propios. */
     Optional<Product> findById(Integer id);
-
-    Optional<Product> findByBarcode(String barcode);
-
-    boolean existsById(Integer id);
-
-    boolean existsByBarcodeAndIdNot(String barcode, Integer id);
 
     Product save(Product product);
 

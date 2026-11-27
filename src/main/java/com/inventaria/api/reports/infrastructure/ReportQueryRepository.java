@@ -35,6 +35,7 @@ public interface ReportQueryRepository extends Repository<Sale, Integer> {
               FROM Productos p
               INNER JOIN Categorias  c  ON p.IdCategoria = c.IdCategoria
               INNER JOIN Proveedores pr ON p.IdProveedor = pr.IdProveedor
+             WHERE p.IdUsuario = :userId
              ORDER BY p.Nombre
             """,
             countQuery = """
@@ -42,9 +43,10 @@ public interface ReportQueryRepository extends Repository<Sale, Integer> {
               FROM Productos p
               INNER JOIN Categorias  c  ON p.IdCategoria = c.IdCategoria
               INNER JOIN Proveedores pr ON p.IdProveedor = pr.IdProveedor
+             WHERE p.IdUsuario = :userId
             """,
             nativeQuery = true)
-    Page<ProductDetailRow> findProductDetails(Pageable pageable);
+    Page<ProductDetailRow> findProductDetails(@Param("userId") Integer userId, Pageable pageable);
 
     @Query(value = """
             SELECT v.IdVenta         AS idVenta,
@@ -59,7 +61,8 @@ public interface ReportQueryRepository extends Repository<Sale, Integer> {
               FROM Ventas v
               INNER JOIN DetalleVenta dv ON v.IdVenta    = dv.IdVenta
               INNER JOIN Productos    p  ON dv.IdProducto = p.IdProducto
-             WHERE v.Fecha >= :desde AND v.Fecha < :hasta
+             WHERE v.IdUsuario = :userId
+               AND v.Fecha >= :desde AND v.Fecha < :hasta
              ORDER BY v.Fecha DESC, v.IdVenta, dv.IdDetalle
             """,
             countQuery = """
@@ -67,10 +70,12 @@ public interface ReportQueryRepository extends Repository<Sale, Integer> {
               FROM Ventas v
               INNER JOIN DetalleVenta dv ON v.IdVenta     = dv.IdVenta
               INNER JOIN Productos    p  ON dv.IdProducto = p.IdProducto
-             WHERE v.Fecha >= :desde AND v.Fecha < :hasta
+             WHERE v.IdUsuario = :userId
+               AND v.Fecha >= :desde AND v.Fecha < :hasta
             """,
             nativeQuery = true)
     Page<SaleDetailRow> findSaleDetails(
+            @Param("userId") Integer userId,
             @Param("desde") LocalDateTime desde,
             @Param("hasta") LocalDateTime hasta,
             Pageable pageable);
@@ -88,17 +93,19 @@ public interface ReportQueryRepository extends Repository<Sale, Integer> {
                    p.Tipo         AS tipo
               FROM Productos p
               INNER JOIN Proveedores pr ON p.IdProveedor = pr.IdProveedor
-             WHERE p.Stock <= p.StockMinimo
+             WHERE p.IdUsuario = :userId
+               AND p.Stock <= p.StockMinimo
              ORDER BY pr.Nombre, p.Stock ASC
             """,
             countQuery = """
             SELECT COUNT(*)
               FROM Productos p
               INNER JOIN Proveedores pr ON p.IdProveedor = pr.IdProveedor
-             WHERE p.Stock <= p.StockMinimo
+             WHERE p.IdUsuario = :userId
+               AND p.Stock <= p.StockMinimo
             """,
             nativeQuery = true)
-    Page<LowStockBySupplierRow> findLowStockBySupplier(Pageable pageable);
+    Page<LowStockBySupplierRow> findLowStockBySupplier(@Param("userId") Integer userId, Pageable pageable);
 
     @Query(value = """
             SELECT c.IdCategoria                                        AS idCategoria,
@@ -108,8 +115,9 @@ public interface ReportQueryRepository extends Repository<Sale, Integer> {
               FROM Categorias c
               LEFT JOIN Productos    p  ON c.IdCategoria  = p.IdCategoria
               LEFT JOIN DetalleVenta dv ON p.IdProducto   = dv.IdProducto
+             WHERE c.IdUsuario = :userId
              GROUP BY c.IdCategoria, c.Nombre
              ORDER BY totalVendido DESC
             """, nativeQuery = true)
-    List<TotalByCategoryRow> findTotalByCategory();
+    List<TotalByCategoryRow> findTotalByCategory(@Param("userId") Integer userId);
 }

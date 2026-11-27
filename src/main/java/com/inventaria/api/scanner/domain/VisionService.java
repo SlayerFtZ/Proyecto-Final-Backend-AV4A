@@ -3,6 +3,7 @@ package com.inventaria.api.scanner.domain;
 import com.inventaria.api.categories.domain.Category;
 import com.inventaria.api.categories.infrastructure.CategoryJpaRepository;
 import com.inventaria.api.shared.error.InvalidFileException;
+import com.inventaria.api.shared.security.CurrentUser;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -22,16 +23,21 @@ public class VisionService {
 
     private final AiVisionClient aiVisionClient;
     private final CategoryJpaRepository categoryRepository;
+    private final CurrentUser currentUser;
 
-    public VisionService(AiVisionClient aiVisionClient, CategoryJpaRepository categoryRepository) {
+    public VisionService(AiVisionClient aiVisionClient,
+                         CategoryJpaRepository categoryRepository,
+                         CurrentUser currentUser) {
         this.aiVisionClient     = aiVisionClient;
         this.categoryRepository = categoryRepository;
+        this.currentUser        = currentUser;
     }
 
     public ProductSuggestionResponse analyzePhoto(MultipartFile file) {
         byte[] imageBytes = validateAndRead(file);
 
-        List<Category> categories   = categoryRepository.findAll();
+        // Solo las categorías del usuario: la IA sugiere entre ellas.
+        List<Category> categories   = categoryRepository.findAllByUserId(currentUser.getId());
         List<String>   categoryNames = categories.stream().map(Category::getName).toList();
 
         ProductSuggestionResponse suggestion = aiVisionClient.analyze(imageBytes, file.getContentType(), categoryNames);

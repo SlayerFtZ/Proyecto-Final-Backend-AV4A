@@ -2,6 +2,7 @@ package com.inventaria.api.summary.domain;
 
 import com.inventaria.api.shared.config.IaProperties;
 import com.inventaria.api.shared.error.AiUnavailableException;
+import com.inventaria.api.shared.security.CurrentUser;
 import com.inventaria.api.summary.infrastructure.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -27,8 +28,11 @@ class SummaryServiceTest {
     @Mock LocalSummaryGenerator localGenerator;
     @Mock IaProperties iaProperties;
     @Mock SummaryIaJpaRepository iaRepository;
+    @Mock CurrentUser currentUser;
 
     @InjectMocks SummaryService service;
+
+    private static final Integer USER_ID = 1;
 
     @BeforeEach
     void setUp() {
@@ -36,10 +40,11 @@ class SummaryServiceTest {
         when(salesRow.getTotalVentas()).thenReturn(3L);
         when(salesRow.getMontoTotal()).thenReturn(new BigDecimal("150.00"));
 
-        when(queryRepository.findLowStockProducts()).thenReturn(List.of());
-        when(queryRepository.findExpiringProducts()).thenReturn(List.of());
-        when(queryRepository.findTodaySales()).thenReturn(List.of(salesRow));
-        when(queryRepository.findTopSellersToday()).thenReturn(List.of());
+        when(currentUser.getId()).thenReturn(USER_ID);
+        when(queryRepository.findLowStockProducts(USER_ID)).thenReturn(List.of());
+        when(queryRepository.findExpiringProducts(USER_ID)).thenReturn(List.of());
+        when(queryRepository.findTodaySales(USER_ID)).thenReturn(List.of(salesRow));
+        when(queryRepository.findTopSellersToday(USER_ID)).thenReturn(List.of());
         when(alertService.generateAlerts(any(), any())).thenReturn(List.of());
     }
 
@@ -54,6 +59,8 @@ class SummaryServiceTest {
         assertEquals("IA", response.origin());
         assertEquals("Resumen generado por IA", response.text());
         verify(localGenerator, never()).generate(any(), any());
+        // El resumen se guarda a nombre del usuario autenticado.
+        verify(iaRepository).save(argThat((AiSummaryRecord r) -> USER_ID.equals(r.getUserId())));
     }
 
     @Test
