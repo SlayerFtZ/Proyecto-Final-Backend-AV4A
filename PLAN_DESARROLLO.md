@@ -261,22 +261,23 @@
 
 ### 7.1 Feature `scanner`
 
-- [ ] **Puerto** `AiVisionClient` — método `analizarImagen(byte[] imagen, List<String> categorias): SugerenciaProductoResponse`
-- [ ] **`VisionService`** — validación de imagen:
-  - No vacía, máx. 5 MB
+- [x] **Puerto** `AiVisionClient` — método `analyze(byte[] image, String contentType, List<String> categories): ProductSuggestionResponse`
+- [x] **`VisionService`** — validación de imagen:
+  - No vacía, máx. 5 MB (413 si excede)
   - Content-type debe ser `image/jpeg`, `image/png` o `image/webp`
-  - Verificar que la imagen realmente se pueda decodificar (no solo confiar en el MIME)
+  - Verificar que la imagen realmente se pueda decodificar con `ImageIO.read()`
   - Consultar categorías existentes para incluirlas en el prompt
-- [ ] **`AiVisionClientImpl`**:
-  - Enviar imagen en base64 al modelo de visión
+  - `findCategoryId()`: match por nombre ignorando mayúsculas y acentos (`Normalizer.NFD`)
+- [x] **`AiVisionClientImpl`**:
+  - Envía imagen en base64 al modelo de visión (`data:{contentType};base64,...`)
   - Parseo tolerante: quitar bloques ` ```json ``` ` si vienen en la respuesta
-  - Normalizar `tipoProducto` a uno de los tres valores válidos; usar `null` si no es reconocible
-  - Si la IA falla → lanzar `IaNoDisponibleException` (503)
-- [ ] **`ScannerController`** — `POST /api/scanner/analizar-foto`:
+  - Normaliza `productType` a uno de los tres valores válidos; `null` si no reconocible
+  - Si la IA falla → lanza `AiUnavailableException` (503)
+- [x] **`ScannerController`** — `POST /api/scanner/analizar-foto`:
   - `multipart/form-data`, campo `foto`
-  - Delegar validación a `VisionService`
-  - `idCategoriaSugerida`: buscar match por nombre ignorando mayúsculas y acentos; `null` si no hay match
-- [ ] **`SugerenciaProductoResponse`** — `nombreSugerido`, `categoriaSugerida`, `idCategoriaSugerida`, `tipoProducto`, `descripcion`
+  - Delega validación a `VisionService`
+  - `suggestedCategoryId`: resuelto por `VisionService` contra categorías de DB; `null` si no hay match
+- [x] **`ProductSuggestionResponse`** — `suggestedName`, `suggestedCategory`, `suggestedCategoryId`, `productType`, `description`
 
 ---
 
